@@ -54,3 +54,10 @@ CONFIG_ZMK_RGB_UNDERGLOW_EXT_POWER=y
 
 # Half brightness - a full 42-LED chain at 100% pulls a lot through the FET.
 CONFIG_ZMK_RGB_UNDERGLOW_BRT_START=50
+
+# ---------------------------------------------------------------------------
+# TEMPORARY DEBUG - remove once the underglow question is settled.
+# Adds a USB CDC serial port carrying the ZMK log. Open it in any terminal
+# (baud is irrelevant for USB CDC) and read the boot messages.
+# ---------------------------------------------------------------------------
+CONFIG_ZMK_USB_LOGGING=y
