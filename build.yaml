@@ -1,16 +1,21 @@
 ---
 # Standalone board build: the Pawpaw carries its own bring-up keymap, so no
-# shield is needed. Artifact will be pawpaw-zmk.uf2.
+# shield is needed. Artifacts: pawpaw-zmk.uf2 and pawpaw-settings_reset-zmk.uf2
 #
-# To re-enable the ZMK log over a USB CDC serial port, add back:
+# settings_reset wipes NVS (CONFIG_ZMK_SETTINGS_RESET_ON_START). Flash it,
+# let it boot, then flash the normal firmware. Worth keeping permanently -
+# it is the standard way to clear BLE bonds and saved state on a ZMK board.
+#
+# To re-enable the ZMK log over a USB CDC serial port, add to the pawpaw entry:
 #     snippet: zmk-usb-logging
-# It must be applied as a SNIPPET, not as a bare CONFIG_ZMK_USB_LOGGING=y -
-# the snippet also supplies the overlay creating the cdc-acm-uart node and
-# pointing chosen zephyr,console at it. Without that overlay the build fails.
+# It must be a SNIPPET, not a bare CONFIG_ZMK_USB_LOGGING=y - the snippet also
+# supplies the overlay creating the cdc-acm-uart node and pointing
+# chosen zephyr,console at it. Without that overlay the build fails.
 #
-# NOTE: enabling that snippet changes startup timing (logging threads, CDC
-# enumeration, LOG_PROCESS_THREAD_STARTUP_DELAY_MS=1000). If a fault appears
-# only WITHOUT the snippet, it is a race that logging was masking - not a
-# fault the snippet fixed.
+# NOTE: that snippet changes startup timing (logging threads, CDC enumeration,
+# LOG_PROCESS_THREAD_STARTUP_DELAY_MS=1000). A fault that appears only WITHOUT
+# it is a race the logging was masking, not one the snippet fixed.
 include:
   - board: pawpaw
+  - board: pawpaw
+    shield: settings_reset
