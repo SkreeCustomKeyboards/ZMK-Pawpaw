@@ -5,6 +5,16 @@ if BOARD_PAWPAW
 config BOARD
     default "pawpaw"
 
+# ZMK ships NO default for this, so without it the USB product string and the
+# BLE advertised name are both empty. Feeds USB_DEVICE_PRODUCT and
+# BT_DEVICE_NAME. Keep it to 16 characters or fewer - BT_DEVICE_NAME_MAX
+# defaults to 16 so the name fits in the BLE advertising packet.
+#
+# Set at board level because this is a standalone bring-up build. In
+# production the keyboard name belongs to the shield, not the controller.
+config ZMK_KEYBOARD_NAME
+    default "Skree Pawpaw"
+
 if USB_DEVICE_STACK
 
 config USB_NRFX
