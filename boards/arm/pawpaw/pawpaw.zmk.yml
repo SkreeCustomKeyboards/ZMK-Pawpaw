@@ -1,0 +1,9 @@
+file_format: "1"
+id: pawpaw
+name: Skree Pawpaw
+type: board
+arch: arm
+outputs:
+  - usb
+  - ble
+url: https://github.com/SkreeCustomKeyboards/Skree-Pawpaw

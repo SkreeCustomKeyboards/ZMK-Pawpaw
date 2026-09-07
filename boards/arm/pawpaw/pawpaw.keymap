@@ -1,0 +1,90 @@
+/*
+ * Bring-up test keymap for the Skree Pawpaw.
+ * SPDX-License-Identifier: MIT
+ *
+ * Sized for the test hardware on hand: a 6x6 sheet (rows R1-R6, cols C1-C6)
+ * plus a 6-key thumb row on R7. Columns C7/C8 are populated so the build is
+ * complete, but nothing is wired there yet.
+ *
+ * LAYER 0 - every wired position sends a DISTINCT key, so you can open a
+ * key-tester website, press each switch and read off exactly which position
+ * fired. Layout of what you should see:
+ *
+ *        C1  C2  C3  C4  C5  C6   | C7  C8 (unwired)
+ *   R1    a   b   c   d   e   f   | F1  F2
+ *   R2    g   h   i   j   k   l   | F3  F4
+ *   R3    m   n   o   p   q   r   | F5  F6
+ *   R4    s   t   u   v   w   x   | F7  F8
+ *   R5    y   z   1   2   3   4   | F9  F10
+ *   R6    5   6   7   8   9   0   | F11 F12
+ *   R7   MO1 F13 F14 F15 F16 F17  | F18 F19
+ *
+ * R7C1 is the layer-hold key, so it types nothing. You prove it works by
+ * holding it and confirming the layer-1 keys below respond.
+ *
+ * LAYER 1 - hold R7C1 for lighting and system control:
+ *
+ *        C1       C2       C3       C4       C5       C6
+ *   R1  RGB_TOG  RGB_EFF  RGB_EFR  RGB_HUI  RGB_HUD  RGB_ON
+ *   R2  RGB_BRI  RGB_BRD  RGB_SAI  RGB_SAD  RGB_SPI  RGB_SPD
+ *   R3  EP_ON    EP_OFF   EP_TOG    -        -        -
+ *   R4  BOOTLDR  RESET     -        -        -        -
+ *   R5  BT_CLR   BT_SEL0  BT_SEL1  BT_SEL2  BT_SEL3  BT_NXT
+ *   R6   -        -        -        -        -        -
+ *
+ * COMBO - pressing R7C5 + R7C6 together (F16+F17) toggles external power,
+ * i.e. the SK6812 power FET on shift register index 9. It is a combo so you
+ * cannot trip it by accident while walking the matrix.
+ *
+ * Note: ZMK ties underglow to ext-power by default
+ * (CONFIG_ZMK_RGB_UNDERGLOW_EXT_POWER), so RGB_TOG already drives the FET.
+ * The explicit EP_* keys and the combo are there to test the FET on its own.
+ */
+
+#include <behaviors.dtsi>
+#include <dt-bindings/zmk/keys.h>
+#include <dt-bindings/zmk/rgb.h>
+#include <dt-bindings/zmk/ext_power.h>
+#include <dt-bindings/zmk/bt.h>
+
+/ {
+    combos {
+        compatible = "zmk,combos";
+
+        /* R7C5 + R7C6 -> toggle the SK6812 power FET */
+        combo_ext_power {
+            timeout-ms = <60>;
+            key-positions = <52 53>;
+            bindings = <&ext_power EP_TOG>;
+            layers = <0>;
+        };
+    };
+
+    keymap {
+        compatible = "zmk,keymap";
+
+        default_layer {
+            bindings = <
+&kp A     &kp B    &kp C    &kp D    &kp E    &kp F     &kp F1   &kp F2
+&kp G     &kp H    &kp I    &kp J    &kp K    &kp L     &kp F3   &kp F4
+&kp M     &kp N    &kp O    &kp P    &kp Q    &kp R     &kp F5   &kp F6
+&kp S     &kp T    &kp U    &kp V    &kp W    &kp X     &kp F7   &kp F8
+&kp Y     &kp Z    &kp N1   &kp N2   &kp N3   &kp N4    &kp F9   &kp F10
+&kp N5    &kp N6   &kp N7   &kp N8   &kp N9   &kp N0    &kp F11  &kp F12
+&mo 1     &kp F13  &kp F14  &kp F15  &kp F16  &kp F17   &kp F18  &kp F19
+            >;
+        };
+
+        control_layer {
+            bindings = <
+&rgb_ug RGB_TOG   &rgb_ug RGB_EFF  &rgb_ug RGB_EFR  &rgb_ug RGB_HUI  &rgb_ug RGB_HUD  &rgb_ug RGB_ON   &trans  &trans
+&rgb_ug RGB_BRI   &rgb_ug RGB_BRD  &rgb_ug RGB_SAI  &rgb_ug RGB_SAD  &rgb_ug RGB_SPI  &rgb_ug RGB_SPD  &trans  &trans
+&ext_power EP_ON  &ext_power EP_OFF &ext_power EP_TOG &trans          &trans           &trans           &trans  &trans
+&bootloader       &sys_reset       &trans           &trans           &trans           &trans           &trans  &trans
+&bt BT_CLR        &bt BT_SEL 0     &bt BT_SEL 1     &bt BT_SEL 2     &bt BT_SEL 3     &bt BT_NXT       &trans  &trans
+&trans            &trans           &trans           &trans           &trans           &trans           &trans  &trans
+&trans            &trans           &trans           &trans           &trans           &trans           &trans  &trans
+            >;
+        };
+    };
+};

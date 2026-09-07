@@ -1,0 +1,56 @@
+# SPDX-License-Identifier: MIT
+
+CONFIG_SOC_SERIES_NRF52X=y
+CONFIG_SOC_NRF52840_QIAA=y
+CONFIG_BOARD_PAWPAW=y
+
+# Enable MPU
+CONFIG_ARM_MPU=y
+
+# Use pinctrl
+CONFIG_PINCTRL=y
+
+# enable GPIO
+CONFIG_GPIO=y
+
+# CRITICAL: P0.09 and P0.10 are NFC1/NFC2 by default on the nRF52840.
+# Pawpaw uses P0.09 as matrix row R2 and P0.10 as the display chip select.
+# Without this they will not function as GPIO at all.
+CONFIG_NFCT_PINS_AS_GPIOS=y
+
+# The 595 shift register chain lives on SPI. CONFIG_GPIO_595 does not need
+# setting - it defaults to y from the "zmk,gpio-595" devicetree compatible.
+CONFIG_SPI=y
+
+CONFIG_USE_DT_CODE_PARTITION=y
+CONFIG_BUILD_OUTPUT_UF2=y
+
+CONFIG_MPU_ALLOW_FLASH_WRITE=y
+CONFIG_NVS=y
+CONFIG_SETTINGS_NVS=y
+CONFIG_FLASH=y
+CONFIG_FLASH_PAGE_LAYOUT=y
+CONFIG_FLASH_MAP=y
+
+CONFIG_ZMK_BLE=y
+CONFIG_ZMK_USB=y
+
+# ---------------------------------------------------------------------------
+# BRING-UP ONLY - remove this block for production.
+# Forcing underglow on in the BOARD defconfig means every keyboard built on
+# a Pawpaw gets it whether it has LEDs or not. For production these belong in
+# the user's config, not here.
+# ---------------------------------------------------------------------------
+CONFIG_LED_STRIP=y
+CONFIG_WS2812_STRIP=y
+CONFIG_ZMK_RGB_UNDERGLOW=y
+
+# Start lit so the FET and the chain are both proven at power-on.
+CONFIG_ZMK_RGB_UNDERGLOW_ON_START=y
+
+# Underglow on/off also drives external power, i.e. the SK6812 power FET on
+# shift register index 9. Correct here because that FET powers nothing else.
+CONFIG_ZMK_RGB_UNDERGLOW_EXT_POWER=y
+
+# Half brightness - a full 42-LED chain at 100% pulls a lot through the FET.
+CONFIG_ZMK_RGB_UNDERGLOW_BRT_START=50

@@ -1,0 +1,182 @@
+/*
+ * Skree Pawpaw - nRF52840 (MS88SF21) keyboard controller
+ * SPDX-License-Identifier: MIT
+ *
+ * Pin map verified against the EasyEDA schematic netlist, not read off an
+ * image. See notes/06-pawpaw-pinmap.md.
+ *
+ * Shift register chain: U2 first (DS <- MOSI), U7 second (DS <- U2 Q7S).
+ * ZMK &shifter index == chain stage, so:
+ *   0..7  = U2 Q0..Q7 -> C8, C7, C1, C2, C3, C4, C5, C6
+ *   8     = U7 Q0     -> unconnected
+ *   9     = U7 Q1     -> 3v3en  (SK6812 power FET)
+ *   10..15= U7 Q2..Q7 -> A1..A6 (spare)
+ * Note the columns are NOT in numeric order.
+ */
+
+/dts-v1/;
+#include <nordic/nrf52840_qiaa.dtsi>
+#include "pawpaw-pinctrl.dtsi"
+#include <dt-bindings/zmk/matrix_transform.h>
+#include <dt-bindings/led/led.h>
+
+/ {
+    model = "Skree Pawpaw";
+    compatible = "skree,pawpaw";
+
+    chosen {
+        zephyr,code-partition = &code_partition;
+        zephyr,sram = &sram0;
+        zephyr,flash = &flash0;
+        zmk,battery = &vbatt;
+        zmk,kscan = &kscan0;
+        zmk,matrix-transform = &default_transform;
+        zmk,underglow = &led_strip;
+    };
+
+    /*
+     * SK6812 chain power FET, driven from shift register index 9 (U7 Q1).
+     * Node name must be EXT_POWER so ZMK's saved on/off setting is preserved.
+     * The FET exists because undriven SK6812s draw significant parasitic
+     * current; EP_TOG / EP_OFF cuts their 3V3 rail entirely.
+     */
+    EXT_POWER {
+        compatible = "zmk,ext-power-generic";
+        control-gpios = <&shifter 9 GPIO_ACTIVE_HIGH>;
+        init-delay-ms = <50>;
+    };
+
+    vbatt: vbatt {
+        compatible = "zmk,battery-nrf-vddh";
+    };
+
+    kscan0: kscan {
+        compatible = "zmk,kscan-gpio-matrix";
+        diode-direction = "col2row";
+        wakeup-source;
+
+        /* logical C1..C8 -> shifter stage */
+        col-gpios
+            = <&shifter 2 GPIO_ACTIVE_HIGH>     /* C1 = U2 Q2 */
+            , <&shifter 3 GPIO_ACTIVE_HIGH>     /* C2 = U2 Q3 */
+            , <&shifter 4 GPIO_ACTIVE_HIGH>     /* C3 = U2 Q4 */
+            , <&shifter 5 GPIO_ACTIVE_HIGH>     /* C4 = U2 Q5 */
+            , <&shifter 6 GPIO_ACTIVE_HIGH>     /* C5 = U2 Q6 */
+            , <&shifter 7 GPIO_ACTIVE_HIGH>     /* C6 = U2 Q7 */
+            , <&shifter 1 GPIO_ACTIVE_HIGH>     /* C7 = U2 Q1 */
+            , <&shifter 0 GPIO_ACTIVE_HIGH>     /* C8 = U2 Q0 */
+            ;
+
+        row-gpios
+            = <&gpio0 26 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>   /* R1 P0.26 */
+            , <&gpio0  9 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>   /* R2 P0.09 NFC1! */
+            , <&gpio0  4 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>   /* R3 P0.04 */
+            , <&gpio1  0 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>   /* R4 P1.00 */
+            , <&gpio0 24 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>   /* R5 P0.24 */
+            , <&gpio0 22 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>   /* R6 P0.22 */
+            , <&gpio0 20 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>   /* R7 P0.20 */
+            ;
+    };
+
+    default_transform: keymap_transform {
+        compatible = "zmk,matrix-transform";
+        columns = <8>;
+        rows = <7>;
+        map = <
+            RC(0,0) RC(0,1) RC(0,2) RC(0,3) RC(0,4) RC(0,5) RC(0,6) RC(0,7)
+            RC(1,0) RC(1,1) RC(1,2) RC(1,3) RC(1,4) RC(1,5) RC(1,6) RC(1,7)
+            RC(2,0) RC(2,1) RC(2,2) RC(2,3) RC(2,4) RC(2,5) RC(2,6) RC(2,7)
+            RC(3,0) RC(3,1) RC(3,2) RC(3,3) RC(3,4) RC(3,5) RC(3,6) RC(3,7)
+            RC(4,0) RC(4,1) RC(4,2) RC(4,3) RC(4,4) RC(4,5) RC(4,6) RC(4,7)
+            RC(5,0) RC(5,1) RC(5,2) RC(5,3) RC(5,4) RC(5,5) RC(5,6) RC(5,7)
+            RC(6,0) RC(6,1) RC(6,2) RC(6,3) RC(6,4) RC(6,5) RC(6,6) RC(6,7)
+        >;
+    };
+};
+
+&adc      { status = "okay"; };
+&gpiote   { status = "okay"; };
+&gpio0    { status = "okay"; };
+&gpio1    { status = "okay"; };
+
+/*
+ * Shared SPI bus: 74HC595 chain (CS = SR_CS P1.13) and the display
+ * connector (CS = SC-CS P0.10). Display traffic shifts junk through the
+ * 595s but never pulses their latch, and the next 595 write shifts 16
+ * fresh bits in, so it self-corrects.
+ */
+&spi1 {
+    compatible = "nordic,nrf-spim";
+    status = "okay";
+    pinctrl-0 = <&spi1_default>;
+    pinctrl-1 = <&spi1_sleep>;
+    pinctrl-names = "default", "sleep";
+
+    cs-gpios = <&gpio1 13 GPIO_ACTIVE_LOW>      /* SR_CS  - 595 STCP latch */
+             , <&gpio0 10 GPIO_ACTIVE_LOW>;     /* SC-CS  - display        */
+
+    shifter: 595@0 {
+        compatible = "zmk,gpio-595";
+        status = "okay";
+        gpio-controller;
+        spi-max-frequency = <200000>;
+        reg = <0>;
+        #gpio-cells = <2>;
+        ngpios = <16>;                          /* two chained registers */
+    };
+};
+
+/*
+ * SK6812 chain on LED_DATA (P0.31). Must be its own SPI instance - it cannot
+ * share spi1 with the shift registers.
+ *
+ * chain-length MUST match the number of LEDs actually fitted. Too few and the
+ * tail of the chain stays dark; too many and the effects spread across
+ * positions that do not exist. Currently set for a 6x6 sheet (36) plus a
+ * 6-key thumb (6).
+ *
+ * Power to this chain is switched by the FET on &shifter 9, and ZMK ties
+ * underglow to ext-power by default, so RGB_TOG drives the FET for free.
+ */
+&spi3 {
+    compatible = "nordic,nrf-spim";
+    status = "okay";
+    pinctrl-0 = <&spi3_default>;
+    pinctrl-1 = <&spi3_sleep>;
+    pinctrl-names = "default", "sleep";
+
+    led_strip: ws2812@0 {
+        compatible = "worldsemi,ws2812-spi";
+        reg = <0>;
+        spi-max-frequency = <4000000>;
+        chain-length = <42>;              /* <-- SET TO YOUR ACTUAL LED COUNT */
+        spi-one-frame = <0x70>;
+        spi-zero-frame = <0x40>;
+        color-mapping = <LED_COLOR_ID_GREEN
+                         LED_COLOR_ID_RED
+                         LED_COLOR_ID_BLUE>;
+    };
+};
+
+zephyr_udc0: &usbd { status = "okay"; };
+
+&flash0 {
+    partitions {
+        compatible = "fixed-partitions";
+        #address-cells = <1>;
+        #size-cells = <1>;
+
+        sd_partition: partition@0 {
+            reg = <0x00000000 0x00026000>;
+        };
+        code_partition: partition@26000 {
+            reg = <0x00026000 0x000c6000>;
+        };
+        storage_partition: partition@ec000 {
+            reg = <0x000ec000 0x00008000>;
+        };
+        boot_partition: partition@f4000 {
+            reg = <0x000f4000 0x0000c000>;
+        };
+    };
+};

@@ -1,0 +1,6 @@
+# Skree Pawpaw board configuration
+# SPDX-License-Identifier: MIT
+
+config BOARD_PAWPAW
+    bool "Skree Pawpaw"
+    depends on SOC_NRF52840_QIAA

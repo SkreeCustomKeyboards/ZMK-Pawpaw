@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: MIT
+
+if BOARD_PAWPAW
+
+config BOARD
+    default "pawpaw"
+
+if USB_DEVICE_STACK
+
+config USB_NRFX
+    default y
+
+endif # USB_DEVICE_STACK
+
+config BT_CTLR
+    default BT
+
+# The 74HC595 chain hangs off SPI. GPIO_595 auto-enables from the
+# "zmk,gpio-595" devicetree compatible, but it depends on SPI.
+config SPI
+    default y
+
+# Shift-register columns need time to settle. Each column change is a 16-bit
+# SPI transaction (two chained 595s), which is far slower than toggling a
+# direct GPIO. Zephyr defaults are 0/0, which is fine for direct GPIO and not
+# for a 595.
+#
+# These values are known to type well on Skree shift-register hardware. They
+# are deliberately generous - tune down if scan rate matters, but flaky or
+# ghosted keys mean you have gone too low.
+config ZMK_KSCAN_MATRIX_WAIT_BEFORE_INPUTS
+    default 200
+
+config ZMK_KSCAN_MATRIX_WAIT_BETWEEN_OUTPUTS
+    default 50
+
+endif # BOARD_PAWPAW

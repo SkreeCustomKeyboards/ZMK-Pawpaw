@@ -1,0 +1,6 @@
+# West workspace / Zephyr build output
+.west/
+build/
+zmk/
+modules/
+zephyr-sdk*/

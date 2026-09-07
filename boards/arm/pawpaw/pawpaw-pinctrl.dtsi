@@ -1,0 +1,40 @@
+/*
+ * Skree Pawpaw pin control
+ * SPDX-License-Identifier: MIT
+ *
+ * spi1 - shared by the 74HC595 chain and the display connector, separated
+ *        by their chip selects (SR_CS P1.13, SC-CS P0.10). MISO is not
+ *        wired on either device, so only SCK and MOSI are assigned.
+ * spi3 - drives the SK6812 chain on P0.31. The WS2812 SPI driver needs only
+ *        the data line, so MOSI alone is assigned here (no SCK).
+ */
+
+&pinctrl {
+    spi1_default: spi1_default {
+        group1 {
+            psels = <NRF_PSEL(SPIM_SCK, 1, 15)>,     /* SCK   P1.15 */
+                <NRF_PSEL(SPIM_MOSI, 0, 6)>;         /* MOSI  P0.06 */
+        };
+    };
+
+    spi1_sleep: spi1_sleep {
+        group1 {
+            psels = <NRF_PSEL(SPIM_SCK, 1, 15)>,
+                <NRF_PSEL(SPIM_MOSI, 0, 6)>;
+            low-power-enable;
+        };
+    };
+
+    spi3_default: spi3_default {
+        group1 {
+            psels = <NRF_PSEL(SPIM_MOSI, 0, 31)>;    /* LED_DATA P0.31 */
+        };
+    };
+
+    spi3_sleep: spi3_sleep {
+        group1 {
+            psels = <NRF_PSEL(SPIM_MOSI, 0, 31)>;
+            low-power-enable;
+        };
+    };
+};
