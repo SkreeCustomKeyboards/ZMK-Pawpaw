@@ -2,13 +2,15 @@
 # Standalone board build: the Pawpaw carries its own bring-up keymap, so no
 # shield is needed. Artifact will be pawpaw-zmk.uf2.
 #
-# snippet: zmk-usb-logging adds a USB CDC serial port carrying the ZMK log.
+# To re-enable the ZMK log over a USB CDC serial port, add back:
+#     snippet: zmk-usb-logging
 # It must be applied as a SNIPPET, not as a bare CONFIG_ZMK_USB_LOGGING=y -
-# the snippet also supplies an overlay creating the cdc-acm-uart node and
-# pointing chosen zephyr,console at it. Without that overlay the build fails,
-# because the Kconfig selects USB_UART_CONSOLE with no console device to bind.
+# the snippet also supplies the overlay creating the cdc-acm-uart node and
+# pointing chosen zephyr,console at it. Without that overlay the build fails.
 #
-# TEMPORARY: drop the snippet line once the underglow issue is diagnosed.
+# NOTE: enabling that snippet changes startup timing (logging threads, CDC
+# enumeration, LOG_PROCESS_THREAD_STARTUP_DELAY_MS=1000). If a fault appears
+# only WITHOUT the snippet, it is a race that logging was masking - not a
+# fault the snippet fixed.
 include:
   - board: pawpaw
-    snippet: zmk-usb-logging
